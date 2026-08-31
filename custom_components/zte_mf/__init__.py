@@ -14,7 +14,6 @@ from .api import (
     ZteMfAuthError,
     ZteMfClient,
     ZteMfError,
-    ZteMfLockedError,
     ZteMfUnsupportedError,
 )
 from .const import DEFAULT_SCAN_INTERVAL
@@ -31,9 +30,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteMfConfigEntry) -> boo
     # from hosts addressed by bare IP unless told otherwise, and this modem is
     # only ever reachable as 192.168.0.1. Without unsafe=True the stok cookie is
     # silently dropped and every reading comes back empty.
+    #
+    # auto_cleanup=False because this entry owns the session and closes it on
+    # unload. Left to Home Assistant's cleanup the session would only be closed
+    # at shutdown, so every reload of this entry would leak one.
     session = async_create_clientsession(
         hass,
         verify_ssl=False,
+        auto_cleanup=False,
         cookie_jar=aiohttp.CookieJar(unsafe=True),
     )
 
@@ -47,16 +51,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteMfConfigEntry) -> boo
         await client.async_assert_supported()
         await client.async_login()
     except ZteMfAuthError as err:
+        await session.close()
         raise ConfigEntryAuthFailed(str(err)) from err
     except ZteMfUnsupportedError as err:
         # Retrying cannot help: the firmware speaks a scheme this client does
         # not implement. Say so once rather than looping on ConfigEntryNotReady.
+        await session.close()
         raise ConfigEntryAuthFailed(str(err)) from err
-    except ZteMfLockedError as err:
-        raise ConfigEntryNotReady(
-            f"modem locked out logins for another {err.seconds_left}s"
-        ) from err
     except ZteMfError as err:
+        # Covers the busy and locked cases too: both clear up on their own,
+        # so the right answer is to let Home Assistant retry the setup.
+        await session.close()
         raise ConfigEntryNotReady(str(err)) from err
 
     scan_interval = entry.options.get(
@@ -64,8 +69,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteMfConfigEntry) -> boo
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
     coordinator = ZteMfCoordinator(hass, entry, client, scan_interval)
+    coordinator.session = session
     await coordinator.async_load_device_info()
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        await session.close()
+        raise
 
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -75,7 +85,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteMfConfigEntry) -> boo
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZteMfConfigEntry) -> bool:
     """Tear down a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded and (session := entry.runtime_data.session) is not None:
+        await session.close()
+    return unloaded
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ZteMfConfigEntry) -> None:

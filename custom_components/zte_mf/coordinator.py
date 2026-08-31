@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -12,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import (
     ZteMfAuthError,
+    ZteMfBusyError,
     ZteMfClient,
     ZteMfConnectionError,
     ZteMfError,
@@ -49,6 +51,8 @@ class ZteMfCoordinator(DataUpdateCoordinator[dict[str, str]]):
         )
         self.client = client
         self.device_info_raw: dict[str, str] = {}
+        # Owned by async_setup_entry, closed by async_unload_entry.
+        self.session: aiohttp.ClientSession | None = None
 
     async def async_load_device_info(self) -> None:
         """Read the identity fields once, for the device registry entry."""
@@ -75,11 +79,10 @@ class ZteMfCoordinator(DataUpdateCoordinator[dict[str, str]]):
             # Surfaces in the UI as "reconfigure", which is right: nothing this
             # integration does on its own will make a wrong password work.
             raise ConfigEntryAuthFailed(str(err)) from err
-        except ZteMfLockedError as err:
-            raise UpdateFailed(
-                f"modem locked out logins for another {err.seconds_left}s"
-            ) from err
-        except ZteMfConnectionError as err:
+        except (ZteMfBusyError, ZteMfLockedError, ZteMfConnectionError) as err:
+            # All three clear up on their own — someone closes the modem's web
+            # UI, the attempt counter resets, the modem comes back — so they are
+            # a failed update, not a broken configuration.
             raise UpdateFailed(str(err)) from err
 
         return {key: str(value) for key, value in data.items()}

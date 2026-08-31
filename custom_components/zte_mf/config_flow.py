@@ -20,6 +20,7 @@ import voluptuous as vol
 
 from .api import (
     ZteMfAuthError,
+    ZteMfBusyError,
     ZteMfClient,
     ZteMfConnectionError,
     ZteMfLockedError,
@@ -46,8 +47,14 @@ async def _async_probe(hass, host: str, password: str) -> dict[str, str]:
     a wrong password is the failure that matters, and it is better discovered
     here than as a config entry that never loads.
     """
+    # auto_cleanup=False because this session is ours to close. Left managed by
+    # Home Assistant, closing it trips the frame helper, which tells the user to
+    # file a bug against this integration — about a line in this integration.
     session = async_create_clientsession(
-        hass, verify_ssl=False, cookie_jar=aiohttp.CookieJar(unsafe=True)
+        hass,
+        verify_ssl=False,
+        auto_cleanup=False,
+        cookie_jar=aiohttp.CookieJar(unsafe=True),
     )
     client = ZteMfClient(session, host, password)
     try:
@@ -77,6 +84,8 @@ class ZteMfConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_auth"
             except ZteMfLockedError:
                 errors["base"] = "locked"
+            except ZteMfBusyError:
+                errors["base"] = "busy"
             except ZteMfUnsupportedError:
                 errors["base"] = "unsupported_firmware"
             except ZteMfConnectionError:
@@ -117,6 +126,8 @@ class ZteMfConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_auth"
             except ZteMfLockedError:
                 errors["base"] = "locked"
+            except ZteMfBusyError:
+                errors["base"] = "busy"
             except ZteMfConnectionError:
                 errors["base"] = "cannot_connect"
             except Exception:

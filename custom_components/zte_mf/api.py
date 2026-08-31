@@ -23,12 +23,13 @@ from typing import Any
 import aiohttp
 
 from .const import (
-    FIELD_FAIL_COUNT,
-    FIELD_LOCK_TIME,
+    FIELD_ATTEMPTS_LEFT,
     FIELD_LOGIN_STATE,
-    LOGIN_RESULT_LOCKED,
-    LOGIN_RESULT_OK,
-    LOGIN_RESULT_WRONG_PASSWORD,
+    FIELD_SESSION_TTL,
+    LOGIN_RESULT_BAD_PASSWORD,
+    LOGIN_RESULT_DUPLICATE,
+    LOGIN_RESULT_FAIL,
+    LOGIN_RESULTS_OK,
     URL_CONFIG_JS,
     URL_GET,
     URL_REFERER,
@@ -59,11 +60,11 @@ class ZteMfAuthError(ZteMfError):
 
 
 class ZteMfLockedError(ZteMfError):
-    """The modem is refusing logins for now after repeated failures."""
+    """The modem has run out of login attempts and stopped accepting them."""
 
-    def __init__(self, seconds_left: int) -> None:
-        super().__init__(f"login locked for {seconds_left}s")
-        self.seconds_left = seconds_left
+
+class ZteMfBusyError(ZteMfError):
+    """Another client holds the modem's single session."""
 
 
 class ZteMfUnsupportedError(ZteMfError):
@@ -110,23 +111,25 @@ class ZteMfClient:
         """Return whether the current cookie still buys us a session."""
         return await self.async_get_one(FIELD_LOGIN_STATE) == "ok"
 
-    async def async_lock_state(self) -> tuple[int, int]:
-        """Return (failed attempts so far, seconds the modem stays locked).
+    async def async_session_state(self) -> tuple[int, int]:
+        """Return (login attempts left, seconds left on the current session).
 
-        A lock time of 0 means "not locked"; the firmware reports -1 for that too,
-        which is normalised here so callers can simply test for a positive number.
+        Both numbers come from fields whose names mislead; see const.py. The
+        session TTL is reported as -1 when there is no session, normalised to 0
+        here so callers can treat it as "no time left".
         """
-        data = await self.async_get([FIELD_FAIL_COUNT, FIELD_LOCK_TIME])
-        return _as_int(data.get(FIELD_FAIL_COUNT), 0), max(
-            0, _as_int(data.get(FIELD_LOCK_TIME), 0)
+        data = await self.async_get([FIELD_ATTEMPTS_LEFT, FIELD_SESSION_TTL])
+        return (
+            _as_int(data.get(FIELD_ATTEMPTS_LEFT), 5),
+            max(0, _as_int(data.get(FIELD_SESSION_TTL), 0)),
         )
 
     async def async_login(self) -> None:
         """Establish a session, refusing to burn attempts on a hopeless password."""
         async with self._login_lock:
-            _, locked_for = await self.async_lock_state()
-            if locked_for > 0:
-                raise ZteMfLockedError(locked_for)
+            attempts_left, _ = await self.async_session_state()
+            if attempts_left <= 0:
+                raise ZteMfLockedError("modem has no login attempts left")
 
             payload = {
                 "isTest": "false",
@@ -136,13 +139,14 @@ class ZteMfClient:
             data = await self._request_json(self._url_set, data=payload)
             result = str(data.get("result", ""))
 
-            if result == LOGIN_RESULT_OK:
-                _LOGGER.debug("logged in to %s", self._host)
+            if result in LOGIN_RESULTS_OK:
+                _LOGGER.debug("logged in to %s (result %s)", self._host, result)
                 return
-            if result == LOGIN_RESULT_LOCKED:
-                _, locked_for = await self.async_lock_state()
-                raise ZteMfLockedError(locked_for or 60)
-            if result == LOGIN_RESULT_WRONG_PASSWORD:
+            if result == LOGIN_RESULT_DUPLICATE:
+                # Someone opened the modem's web UI. It keeps one session, so
+                # this is a "come back later", not a credentials problem.
+                raise ZteMfBusyError("another client holds the modem session")
+            if result in (LOGIN_RESULT_BAD_PASSWORD, LOGIN_RESULT_FAIL):
                 raise ZteMfAuthError("modem rejected the password")
             raise ZteMfAuthError(f"unexpected login result {result!r}")
 

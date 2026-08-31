@@ -55,19 +55,31 @@ DEVICE_FIELDS: Final[tuple[str, ...]] = (
     "msisdn",
 )
 
-# Cheap "is my session still alive" probe: one field, answers "ok" or "no".
+# Cheap "is my session still alive" probe: one field, answers "ok" or "" .
 FIELD_LOGIN_STATE: Final = "loginfo"
 
-# Lockout bookkeeping. The modem allows a handful of failed logins and then
-# refuses to talk for a while; login_lock_time counts the remaining seconds
-# and is -1 when nothing is locked.
-FIELD_FAIL_COUNT: Final = "psw_fail_num_str"
-FIELD_LOCK_TIME: Final = "login_lock_time"
+# How many login attempts the firmware still grants. Counts DOWN from 5
+# (MAX_LOGIN_COUNT in the firmware's own config.js) as passwords are rejected,
+# so zero means the modem has stopped accepting logins.
+FIELD_ATTEMPTS_LEFT: Final = "psw_fail_num_str"
+
+# Despite the name, this is NOT a lockout timer — measured on MF823 firmware
+# 31.08.2026. With no session it reads -1; a successful login sets it to 300
+# and it counts down from there, i.e. it is the remaining life of the session.
+# Treating it as a lockout (the obvious reading of the name) makes the client
+# refuse to log in for as long as it is successfully logged in — which is
+# exactly backwards, and is a mistake this integration made once already.
+FIELD_SESSION_TTL: Final = "login_lock_time"
 
 # goform_set_cmd_process returns a bare {"result": "..."} for LOGIN.
+# Codes taken from the firmware's own service.js.
 LOGIN_RESULT_OK: Final = "0"
-LOGIN_RESULT_WRONG_PASSWORD: Final = "3"
-LOGIN_RESULT_LOCKED: Final = "4"
+LOGIN_RESULT_FAIL: Final = "1"
+LOGIN_RESULT_DUPLICATE: Final = "2"
+LOGIN_RESULT_BAD_PASSWORD: Final = "3"
+# "4" is "already logged in" — a success, not a failure.
+LOGIN_RESULT_ALREADY: Final = "4"
+LOGIN_RESULTS_OK: Final = frozenset({LOGIN_RESULT_OK, LOGIN_RESULT_ALREADY})
 
 # States of modem_main_state that mean "radio is up and attached".
 MODEM_STATES_ONLINE: Final = frozenset(

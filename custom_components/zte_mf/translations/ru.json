@@ -19,9 +19,10 @@
     "error": {
       "cannot_connect": "Модем по этому адресу не отвечает.",
       "invalid_auth": "Модем отклонил пароль.",
-      "locked": "Модем временно не принимает вход после неудачных попыток. Дождитесь разблокировки.",
+      "locked": "У модема кончились попытки входа. Передёрните питание или подождите, затем повторите.",
       "unsupported_firmware": "Прошивка использует другой способ передачи пароля, эта интеграция его не умеет.",
-      "unknown": "Непредвиденная ошибка."
+      "unknown": "Непредвиденная ошибка.",
+      "busy": "Единственную сессию модема занял другой клиент — закройте его веб-интерфейс и повторите."
     },
     "abort": {
       "already_configured": "Этот модем уже добавлен.",
@@ -41,26 +42,62 @@
   },
   "entity": {
     "sensor": {
-      "rsrp": { "name": "RSRP" },
-      "rsrq": { "name": "RSRQ" },
-      "sinr": { "name": "SINR" },
-      "rssi": { "name": "RSSI" },
-      "signal_bars": { "name": "Уровень сигнала" },
-      "band": { "name": "Диапазон" },
-      "network_type": { "name": "Тип сети" },
-      "provider": { "name": "Оператор" },
-      "modem_state": { "name": "Состояние модема" },
-      "wan_ip": { "name": "Внешний IP" },
-      "realtime_tx": { "name": "Realtime upload" },
-      "realtime_rx": { "name": "Realtime download" },
-      "monthly_tx": { "name": "Отдано за месяц" },
-      "monthly_rx": { "name": "Принято за месяц" },
-      "total_tx": { "name": "Отдано всего" },
-      "total_rx": { "name": "Принято всего" }
+      "rsrp": {
+        "name": "RSRP"
+      },
+      "rsrq": {
+        "name": "RSRQ"
+      },
+      "sinr": {
+        "name": "SINR"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "signal_bars": {
+        "name": "Уровень сигнала"
+      },
+      "band": {
+        "name": "Диапазон"
+      },
+      "network_type": {
+        "name": "Тип сети"
+      },
+      "provider": {
+        "name": "Оператор"
+      },
+      "modem_state": {
+        "name": "Состояние модема"
+      },
+      "wan_ip": {
+        "name": "Внешний IP"
+      },
+      "realtime_tx": {
+        "name": "Realtime upload"
+      },
+      "realtime_rx": {
+        "name": "Realtime download"
+      },
+      "monthly_tx": {
+        "name": "Отдано за месяц"
+      },
+      "monthly_rx": {
+        "name": "Принято за месяц"
+      },
+      "total_tx": {
+        "name": "Отдано всего"
+      },
+      "total_rx": {
+        "name": "Принято всего"
+      }
     },
     "binary_sensor": {
-      "connection": { "name": "Соединение" },
-      "registered": { "name": "Регистрация в сети" }
+      "connection": {
+        "name": "Соединение"
+      },
+      "registered": {
+        "name": "Регистрация в сети"
+      }
     }
   }
 }
