@@ -1,0 +1,6 @@
+{
+  "name": "ZTE MF LTE modem",
+  "content_in_root": false,
+  "render_readme": true,
+  "homeassistant": "2026.3.0"
+}

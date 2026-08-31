@@ -1,0 +1,66 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ZTE MF LTE modem",
+        "description": "The modem's own web interface address, and the password you use to sign in to it. Note that the modem locks logins for a while after a few wrong attempts, so avoid guessing.",
+        "data": {
+          "host": "Host",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-enter the modem password",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the modem at that address.",
+      "invalid_auth": "The modem rejected that password.",
+      "locked": "The modem is temporarily refusing logins after failed attempts. Wait for it to unlock and try again.",
+      "unsupported_firmware": "This firmware uses a password scheme this integration does not implement.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This modem is already set up.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling",
+        "description": "How often to read the modem. The modem keeps a single session, so polling too often is not free.",
+        "data": {
+          "scan_interval": "Seconds between polls"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "rsrp": { "name": "RSRP" },
+      "rsrq": { "name": "RSRQ" },
+      "sinr": { "name": "SINR" },
+      "rssi": { "name": "RSSI" },
+      "signal_bars": { "name": "Signal bars" },
+      "band": { "name": "Band" },
+      "network_type": { "name": "Network type" },
+      "provider": { "name": "Provider" },
+      "modem_state": { "name": "Modem state" },
+      "wan_ip": { "name": "WAN IP" },
+      "realtime_tx": { "name": "Realtime upload" },
+      "realtime_rx": { "name": "Realtime download" },
+      "monthly_tx": { "name": "Monthly upload" },
+      "monthly_rx": { "name": "Monthly download" },
+      "total_tx": { "name": "Total upload" },
+      "total_rx": { "name": "Total download" }
+    },
+    "binary_sensor": {
+      "connection": { "name": "Connection" },
+      "registered": { "name": "Registered" }
+    }
+  }
+}

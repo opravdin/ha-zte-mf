@@ -1,0 +1,12 @@
+{
+  "domain": "zte_mf",
+  "name": "ZTE MF LTE modem",
+  "codeowners": ["@opravdin"],
+  "config_flow": true,
+  "documentation": "https://github.com/opravdin/ha-zte-mf",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/opravdin/ha-zte-mf/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

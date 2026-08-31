@@ -1,0 +1,66 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LTE-модем ZTE MF",
+        "description": "Адрес веб-интерфейса самого модема и пароль от него. Учтите: после нескольких неверных попыток модем блокирует вход на время, поэтому пароль лучше не подбирать.",
+        "data": {
+          "host": "Адрес",
+          "password": "Пароль"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Введите пароль модема заново",
+        "data": {
+          "password": "Пароль"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Модем по этому адресу не отвечает.",
+      "invalid_auth": "Модем отклонил пароль.",
+      "locked": "Модем временно не принимает вход после неудачных попыток. Дождитесь разблокировки.",
+      "unsupported_firmware": "Прошивка использует другой способ передачи пароля, эта интеграция его не умеет.",
+      "unknown": "Непредвиденная ошибка."
+    },
+    "abort": {
+      "already_configured": "Этот модем уже добавлен.",
+      "reauth_successful": "Пароль обновлён."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Опрос",
+        "description": "Как часто читать модем. Модем держит одну сессию, поэтому частый опрос не бесплатен.",
+        "data": {
+          "scan_interval": "Секунд между опросами"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "rsrp": { "name": "RSRP" },
+      "rsrq": { "name": "RSRQ" },
+      "sinr": { "name": "SINR" },
+      "rssi": { "name": "RSSI" },
+      "signal_bars": { "name": "Уровень сигнала" },
+      "band": { "name": "Диапазон" },
+      "network_type": { "name": "Тип сети" },
+      "provider": { "name": "Оператор" },
+      "modem_state": { "name": "Состояние модема" },
+      "wan_ip": { "name": "Внешний IP" },
+      "realtime_tx": { "name": "Realtime upload" },
+      "realtime_rx": { "name": "Realtime download" },
+      "monthly_tx": { "name": "Отдано за месяц" },
+      "monthly_rx": { "name": "Принято за месяц" },
+      "total_tx": { "name": "Отдано всего" },
+      "total_rx": { "name": "Принято всего" }
+    },
+    "binary_sensor": {
+      "connection": { "name": "Соединение" },
+      "registered": { "name": "Регистрация в сети" }
+    }
+  }
+}
